@@ -2,6 +2,8 @@ package com.lesageviana.email_manager.service;
 
 import com.lesageviana.email_manager.model.EmailMessage;
 import jakarta.annotation.PostConstruct;
+
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import jakarta.mail.*;
@@ -24,6 +26,20 @@ public class EmailService implements Runnable {
     // Use AtomicReference to safely store the last message from multiple threads
     private final static AtomicReference<EmailMessage> lastReceivedEmail = new AtomicReference<>(null);
 
+    @Value("${email-manager.imap.host}")
+    private String imapHost;
+
+    @Value("${email-manager.imap.port}")
+    private String imapPort;
+
+    @Value("${email-manager.imap.username}")
+    private String imapUsername;
+
+    @Value("${email-manager.imap.password}")
+    private String imapPassword;
+
+    @Value("${email-manager.inbox.folder}")
+    private String inboxFolder;
     /**
      * Initializes the connection and starts listening when the service bean is created.
      */
@@ -54,23 +70,23 @@ public class EmailService implements Runnable {
         }
     }
 
-    private static Properties getImapProperties() {
+    private Properties getImapProperties() {
 		Properties props = new Properties();
         props.put("mail.store.api", "imaps"); 
-        props.put("mail.imap.host", "imap.gmail.com");
-        props.put("mail.imap.port", "993");
+        props.put("mail.imap.host", this.imapHost);
+        props.put("mail.imap.port", this.imapPort);
 		return props;
 	}
 
-    private static Store getImapStore() throws Exception {
+    private Store getImapStore() throws Exception {
 		Session session = Session.getInstance(getImapProperties());
 		Store store = session.getStore("imaps");
-		store.connect("imap.gmail.com", "testlesageviana@gmail.com", "ugpk zijz hqkj ttxj");
+		store.connect(this.imapHost, this.imapUsername, this.imapPassword);
 		return store;
 	}
 
-    private static IMAPFolder getFolderFromStore(Store store) throws MessagingException {
-		IMAPFolder folder = (IMAPFolder) store.getFolder("INBOX");
+    private IMAPFolder getFolderFromStore(Store store) throws MessagingException {
+		IMAPFolder folder = (IMAPFolder) store.getFolder(this.inboxFolder);
 		folder.open(Folder.READ_ONLY);
 
         folder.addMessageCountListener(new MessageCountAdapter() {
