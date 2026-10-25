@@ -4,15 +4,18 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
+import com.lesageviana.email_manager.service.LMService;
 import com.lesageviana.email_manager.service.OutgoingMailService;
 
 @SpringBootApplication
 public class EmailManagerApplication implements CommandLineRunner {
 
+    private final LMService chatService;
     private final OutgoingMailService outgoingMailService;
 
-    public EmailManagerApplication(OutgoingMailService outgoingMailService) {
+    public EmailManagerApplication(OutgoingMailService outgoingMailService, LMService chatService) {
         this.outgoingMailService = outgoingMailService;
+        this.chatService = chatService;
     }
 
     public static void main(String[] args) {
@@ -25,18 +28,16 @@ public class EmailManagerApplication implements CommandLineRunner {
      */
     @Override
     public void run(String... args) throws Exception {
-        System.out.println("--- Running Outgoing Mail Test ---");
+        System.out.println("--- Running LM studio Test ---");
         // NOTE: Update these details with actual testing data before deployment!
-        boolean success = outgoingMailService.sendSimpleEmail(
-                "hugo.viana@etu.univ-cotedazur.fr", 
-                "Salut", 
-                "This is a test message to verify the sending functionality.\n\nIf you received this, the SMTP configuration and service are working correctly."
-        );
 
-        if (success) {
-            System.out.println("Outgoing Mail Test Status: SUCCESS");
-        } else {
-            System.err.println("Outgoing Mail Test Status: FAILED (Check credentials/logs)");
+        try {
+            String answer = chatService.chat("Salut, ça va ?");
+
+            System.out.println(answer);
+        }
+        catch (Exception e) {
+            e.printStackTrace();
         }
     }
 }
