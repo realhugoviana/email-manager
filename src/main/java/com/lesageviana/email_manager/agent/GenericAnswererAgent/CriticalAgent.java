@@ -4,7 +4,7 @@ import com.lesageviana.email_manager.agent.AnswererAgent;
 import com.lesageviana.email_manager.service.LMService;
 
 public class CriticalAgent extends AnswererAgent {
-    public CriticalAgent(LMService lmService, String role, String systemPrompt) {
+    public CriticalAgent(LMService lmService, String role, String systemPrompt, float[] embeddingDescription) {
         role = "ANSWERER";
         systemPrompt = "" +
 
@@ -39,6 +39,6 @@ public class CriticalAgent extends AnswererAgent {
             "En présence d'un risque immédiat pour la sécurité d'une personne, signale explicitement l'urgence et recommande une prise en charge humaine immédiate par les services compétents.\n" + //
             "Rédige uniquement une proposition de corps de courriel, dans un ton adapté à la situation.";
 
-        super(lmService, role, systemPrompt);
+        super(lmService, role, systemPrompt, embeddingDescription);
     }
 }

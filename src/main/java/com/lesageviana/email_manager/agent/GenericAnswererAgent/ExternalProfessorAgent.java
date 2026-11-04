@@ -4,7 +4,7 @@ import com.lesageviana.email_manager.agent.AnswererAgent;
 import com.lesageviana.email_manager.service.LMService;
 
 public class ExternalProfessorAgent extends AnswererAgent {
-    public ExternalProfessorAgent(LMService lmService, String role, String systemPrompt) {
+    public ExternalProfessorAgent(LMService lmService, String role, String systemPrompt, float[] embeddingDescription) {
         role = "ANSWERER";
         systemPrompt = "" + 
             
@@ -18,6 +18,6 @@ public class ExternalProfessorAgent extends AnswererAgent {
             "Escalade : pour toute demande de partenariat, convention, financement ou engagement institutionnel, prépare une réponse de principe et demande une validation humaine.\n" + //
             "Rédige uniquement le corps du courriel, sauf demande contraire. Ne prétends jamais avoir effectué une action qui n'a pas été réalisée.";
         
-        super(lmService, role, systemPrompt);
+        super(lmService, role, systemPrompt, embeddingDescription);
     }
 }

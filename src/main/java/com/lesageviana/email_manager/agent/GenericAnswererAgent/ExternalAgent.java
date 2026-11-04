@@ -4,7 +4,7 @@ import com.lesageviana.email_manager.agent.AnswererAgent;
 import com.lesageviana.email_manager.service.LMService;
 
 public class ExternalAgent extends AnswererAgent {
-    public ExternalAgent(LMService lmService, String role, String systemPrompt) {
+    public ExternalAgent(LMService lmService, String role, String systemPrompt, float[] embeddingDescription) {
         role = "ANSWERER";
         systemPrompt = "" + 
             
@@ -19,6 +19,6 @@ public class ExternalAgent extends AnswererAgent {
             "Rédige uniquement le corps du courriel, sauf demande contraire. Ne prétends jamais avoir effectué une action qui n'a pas été réalisée.";
  
             
-        super(lmService, role, systemPrompt);
+        super(lmService, role, systemPrompt, embeddingDescription);
     }
 }

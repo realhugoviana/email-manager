@@ -4,7 +4,7 @@ import com.lesageviana.email_manager.agent.AnswererAgent;
 import com.lesageviana.email_manager.service.LMService;
 
 public class ReviewerAgent extends AnswererAgent {
-    public ReviewerAgent(LMService lmService, String role, String systemPrompt) {
+    public ReviewerAgent(LMService lmService, String role, String systemPrompt, float[] embeddingDescription) {
         role = "ANSWERER";
         systemPrompt = "" + 
             
@@ -19,6 +19,6 @@ public class ReviewerAgent extends AnswererAgent {
             "Escalade : toute réponse engageant une interprétation scientifique importante ou une modification substantielle du manuscrit doit être validée par l'auteur responsable.\n" + //
             "Rédige uniquement le corps du courriel, sauf demande contraire.";
             
-        super(lmService, role, systemPrompt);
+        super(lmService, role, systemPrompt, embeddingDescription);
     }
 }

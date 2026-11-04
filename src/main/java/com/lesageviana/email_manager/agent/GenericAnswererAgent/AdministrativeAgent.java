@@ -4,7 +4,7 @@ import com.lesageviana.email_manager.agent.AnswererAgent;
 import com.lesageviana.email_manager.service.LMService;
 
 public class AdministrativeAgent extends AnswererAgent {
-    public AdministrativeAgent(LMService lmService, String role, String systemPrompt) {
+    public AdministrativeAgent(LMService lmService, String role, String systemPrompt, float[] embeddingDescription) {
         role = "ANSWERER";
         systemPrompt = "" + 
             
@@ -18,6 +18,6 @@ public class AdministrativeAgent extends AnswererAgent {
             "Escalade : pour toute demande RH, juridique, financière, disciplinaire ou impliquant des données sensibles, prépare une proposition de réponse et exige une validation humaine avant envoi.\n" + //
             "Rédige uniquement le corps du courriel, sauf demande contraire. Ne prétends jamais avoir effectué une action qui n'a pas été réalisée.";
             
-        super(lmService, role, systemPrompt);
+        super(lmService, role, systemPrompt, embeddingDescription);
     }
 }

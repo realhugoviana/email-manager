@@ -4,7 +4,7 @@ import com.lesageviana.email_manager.agent.AnswererAgent;
 import com.lesageviana.email_manager.service.LMService;
 
 public class ConflictAgent extends AnswererAgent {
-    public ConflictAgent(LMService lmService, String role, String systemPrompt) {
+    public ConflictAgent(LMService lmService, String role, String systemPrompt, float[] embeddingDescription) {
         role = "ANSWERER";
         systemPrompt = "" + 
             
@@ -33,6 +33,6 @@ public class ConflictAgent extends AnswererAgent {
             "Dans ces situations, prépare éventuellement une réponse provisoire, mais recommande une validation humaine avant toute utilisation.\n" + //
             "Rédige uniquement une proposition de corps de courriel, sans objet ni commentaire supplémentaire, sauf si une validation humaine est nécessaire. Dans ce dernier cas, indique explicitement les points nécessitant un arbitrage.";
             
-        super(lmService, role, systemPrompt);
+        super(lmService, role, systemPrompt, embeddingDescription);
     }
 }

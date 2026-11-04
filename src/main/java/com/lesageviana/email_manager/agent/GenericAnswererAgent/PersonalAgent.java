@@ -4,7 +4,7 @@ import com.lesageviana.email_manager.agent.AnswererAgent;
 import com.lesageviana.email_manager.service.LMService;
 
 public class PersonalAgent extends AnswererAgent {
-    public PersonalAgent(LMService lmService, String role, String systemPrompt) {
+    public PersonalAgent(LMService lmService, String role, String systemPrompt, float[] embeddingDescription) {
         role = "ANSWERER";
         systemPrompt = "" + 
             
@@ -23,6 +23,6 @@ public class PersonalAgent extends AnswererAgent {
             "Escalade : si un message est ambigu, particulièrement sensible, conflictuel ou susceptible d'engager personnellement l'enseignant-chercheur, rédige une proposition prudente et signale les points nécessitant son attention.\n" + //
             "Rédige uniquement le corps du courriel, sans objet ni commentaire supplémentaire, sauf si une validation est nécessaire.";
             
-        super(lmService, role, systemPrompt);
+        super(lmService, role, systemPrompt, embeddingDescription);
     }
 }
