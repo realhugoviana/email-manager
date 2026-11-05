@@ -13,6 +13,7 @@ import jakarta.mail.event.MessageCountEvent;
 import com.sun.mail.imap.IMAPFolder;
 
 import java.util.Properties;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
@@ -40,6 +41,8 @@ public class EmailService implements Runnable {
 
     @Value("${email-manager.inbox.folder}")
     private String inboxFolder;
+
+    private static final OutgoingMailService outgoingMailService = new OutgoingMailService();
     /**
      * Initializes the connection and starts listening when the service bean is created.
      */
@@ -125,17 +128,26 @@ public class EmailService implements Runnable {
         try {
             String subject = message.getSubject();
             String sender = message.getFrom()[0].toString();
+            String[] allRecipients = Arrays.toString(message.getAllRecipients()).split("[\\[\\]]")[1].split(", ");
             Date date = message.getSentDate();
             String bodyText = message.getContent().toString();
 
             // Map Message to EmailMessage model
-            EmailMessage emailMessage = new EmailMessage(sender, subject, date, bodyText);
+            EmailMessage emailMessage = new EmailMessage(sender, allRecipients, subject, date, bodyText, message);
             
             logger.info("Processed new email: From " + sender + ", Subject: " + subject);
 
             // Update the shared reference
             lastReceivedEmail.set(emailMessage);
             printLastReceivedEmail();
+
+            boolean successReply = outgoingMailService.sendEmailReply(lastReceivedEmail.get(), "réponse", false);
+
+            if (successReply == true) {
+                System.out.println("Outgoing Mail Test Status: SUCCESS");
+            } else {
+                System.err.println("Outgoing Mail Test Status: FAILED (Check credentials/logs)");
+            }
 
         } catch (Exception e) {
             logger.log(Level.SEVERE, "Error processing message.", e);
