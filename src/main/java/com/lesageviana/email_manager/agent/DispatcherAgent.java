@@ -3,6 +3,7 @@ package com.lesageviana.email_manager.agent;
 import com.lesageviana.email_manager.model.EmailMessage;
 import com.lesageviana.email_manager.service.LMService;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.Optional;
@@ -13,18 +14,15 @@ import java.util.Optional;
  */
 @Component
 public class DispatcherAgent implements IAgent {
-    private final List<AnswererAgent> answerers; // All available concrete Answerer Agents
+    // Now takes the list of agents from the dedicated loader service, not Spring auto-discovery
+    private final List<AnswererAgent> answerers; 
     private final LMService lmService;
 
-    // Spring will automatically inject all beans implementing IAgent (the specific Answerers) and LMService
-    public DispatcherAgent(List<AnswererAgent> answerers, LMService lmService) {
-        this.answerers = answerers;
+    @Autowired
+    public DispatcherAgent(AgentConfigLoader agentConfigLoader, LMService lmService) {
+        // Initialize the list of agents using the dedicated loader service.
+        this.answerers = agentConfigLoader.getLoadedAgents();
         this.lmService = lmService;
-    }
-
-    @Override
-    public String getRole() {
-        return "DISPATCHER";
     }
 
     /**

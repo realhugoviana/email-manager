@@ -8,26 +8,19 @@ import org.springframework.stereotype.Component;
  * Abstract base class for all answerer agents, providing common structure
  * and handling the interaction with the LLM via LMService.
  */
-@Component
 public abstract class AnswererAgent implements IAgent {
-    private final String role;
     protected final LMService lmService;
     private final String systemPrompt; // Agent's mandatory system prompt
     private float[] embeddingDescription;
     /** The running context or memory of the agent (history of emails and responses) */
-    protected StringBuilder context = new StringBuilder();
+    private String context;
 
     // Constructor to inject necessary services and the agent's specific system prompt
-    public AnswererAgent(LMService lmService, String role, String systemPrompt, float[] embeddingDescription) {
+    public AnswererAgent(LMService lmService, String systemPrompt, String context) {
         this.lmService = lmService;
-        this.role = role;
         this.systemPrompt = systemPrompt;
+        this.context = context;
         this.embeddingDescription = makeEmbedDescription();
-    }
-
-    @Override
-    public String getRole() {
-        return this.role;
     }
 
     public float[] makeEmbedDescription() {
@@ -44,10 +37,10 @@ public abstract class AnswererAgent implements IAgent {
      */
     public void updateContext(EmailMessage email) {
         // Append the new incoming email to the agent's context history
-        context.append("\n--- NEW EMAIL RECEIVED ---\n");
-        context.append("Sender: ").append(email.getSender()).append("\n");
-        context.append("Subject: ").append(email.getSubject()).append("\n");
-        context.append("Body:\n").append(email.getBody());
+        context += "\n--- NEW EMAIL RECEIVED ---\n";
+        context += "Sender: " + email.getSender() + "\n";
+        context += "Subject: " + email.getSubject() + "\n";
+        context += "Body:\n" + email.getBody();
 
         this.embeddingDescription = makeEmbedDescription();
     }
