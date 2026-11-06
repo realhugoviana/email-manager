@@ -1,0 +1,33 @@
+Return-Path: <raphael.vinot@etu.univ-valmont.fr>
+Message-ID: <6321c0472e72@etu.univ-valmont.fr>
+Date: Wed, 14 Oct 2026 11:16:33 +0200
+From: Raphaël Vinot <raphael.vinot@etu.univ-valmont.fr>
+To: Arno Lesage <arno.lesage@univ-valmont.fr>
+Subject: Re: Chapitre 3 - merci ! Deux questions sur la section 3.2
+In-Reply-To: <b5c10be9b722@etu.univ-valmont.fr>
+References: <b5c10be9b722@etu.univ-valmont.fr>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
+
+Bonjour Arno,
+
+> Bonjour Raphaël,
+>
+> Très bonne version. Deux points : la section 3.2 mérite un schéma
+> (le lemme 3.3 est difficile à suivre sans figure), et vérifie
+> l'hypothèse H2, elle me semble superflue.
+>
+> Arno
+
+Merci beaucoup ! Pour 3.2 : d'accord, je fais une figure TikZ d'ici la
+soutenance. Deux questions sur le reste :
+
+  1. Si je retire H2, la proposition 3.5 ne tient plus que pour les
+     topologies régulières - est-ce que je le formule comme une extension
+     ou je borne le chapitre au cas régulier ?
+  2. Peux-tu jeter un oeil à l'intro du chapitre 4 avant que je l'envoie
+     à Béatrice ?
+
+Merci pour ta disponibilité,
+Raphaël
