@@ -1,0 +1,27 @@
+Return-Path: <s.whitfield@aldergate.ac.uk>
+Message-ID: <a462910cddbf@aldergate.ac.uk>
+Date: Mon, 12 Oct 2026 16:48:34 +0200
+From: Sarah Whitfield <s.whitfield@aldergate.ac.uk>
+To: Arno Lesage <arno.lesage@univ-valmont.fr>
+Subject: 4.2 rewritten - can you sanity-check the benchmark table?
+In-Reply-To: <45619d0f34d2@aldergate.ac.uk>
+References: <06e6eef69937@aldergate.ac.uk> <45619d0f34d2@aldergate.ac.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
+
+Hi Arno,
+
+Section 4.2 is rewritten and the numbers are in. Two things to check please:
+
+  - Table 2: the energy numbers for ShOt look suspiciously good on the
+    64-node config. I suspect a unit mix-up (W vs kW?), can you verify
+    against your logs?
+  - Fig. 3 caption: I described the confidence intervals as 95% but the
+    script computes 90%.
+
+Everything else is ready for my part. Once you confirm, I'll open the
+final pass on the introduction.
+
+Thanks!
+Sarah
