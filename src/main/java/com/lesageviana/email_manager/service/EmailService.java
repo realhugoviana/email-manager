@@ -1,8 +1,10 @@
 package com.lesageviana.email_manager.service;
 
+import com.lesageviana.email_manager.agent.DispatcherAgent;
 import com.lesageviana.email_manager.model.EmailMessage;
 import jakarta.annotation.PostConstruct;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -13,8 +15,11 @@ import jakarta.mail.event.MessageCountEvent;
 import com.sun.mail.imap.IMAPFolder;
 
 import java.util.Properties;
+import java.util.Arrays;
 import java.util.Date;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -22,9 +27,11 @@ import java.util.logging.Logger;
 public class EmailService implements Runnable {
 
     private static final Logger logger = Logger.getLogger(EmailService.class.getName());
-    
-    // Use AtomicReference to safely store the last message from multiple threads
-    private final static AtomicReference<EmailMessage> lastReceivedEmail = new AtomicReference<>(null);
+
+    private final BlockingQueue<Message> messageQueue = new LinkedBlockingQueue<>();
+
+    // Use a queue for sequential processing of incoming emails
+    private static volatile BlockingQueue<EmailMessage> emailProcessingQueue = new LinkedBlockingQueue<>();
 
     @Value("${email-manager.imap.host}")
     private String imapHost;
@@ -40,21 +47,36 @@ public class EmailService implements Runnable {
 
     @Value("${email-manager.inbox.folder}")
     private String inboxFolder;
+
+    private static final OutgoingMailService outgoingMailService = new OutgoingMailService();
+
+    @Autowired
+    private DispatcherAgent dispatcherAgent;
     /**
      * Initializes the connection and starts listening when the service bean is created.
      */
     @PostConstruct
     public void init() {
         logger.info("Initializing EmailService: Starting IMAP listener.");
-        // Run the listener logic in a separate thread to avoid blocking the Spring context
-        new Thread(this).start();
+        // Start the dedicated thread for listening and enqueuing messages
+        new Thread(this::listenAndEnqueueMessages).start();
+        // Start a separate consumer thread to process messages sequentially from the queue
+        new Thread(this::processMessageQueue).start();
+    }
+
+    @Override
+    public void run() {
+        listenAndEnqueueMessages();
     }
 
     /**
      * The run method implements Runnable, allowing us to start continuous background listening.
      */
-    @Override
-    public void run() {
+        /**
+     * The run method is renamed to listenAndEnqueueMessages and handles continuous IMAP listening
+     * and adding incoming messages to the shared queue for sequential processing.
+     */
+    public void listenAndEnqueueMessages() {
         Store store = null;
         IMAPFolder folder = null;
 
@@ -66,13 +88,52 @@ public class EmailService implements Runnable {
                 folder.idle();
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.log(Level.SEVERE, "Error during IMAP listening loop.", e);
+        } finally {
+             if (folder != null && folder.isOpen()) {
+                 try {
+                     folder.close();
+                 } catch (MessagingException e) {
+                     // Ignore
+                 }
+             }
+             if (store != null && store.isConnected()) {
+                 try {
+                     store.close();
+                 } catch (MessagingException e) {
+                     // Ignore
+                 }
+             }
+        }
+    }
+
+    /**
+     * Dedicated consumer thread that processes messages sequentially from the queue.
+     */
+    private void processMessageQueue() {
+        while (!Thread.currentThread().isInterrupted()) {
+            try {
+                // Waits indefinitely until a message is available in the queue (blocking call)
+                Message message = messageQueue.take();
+                logger.info("Processing new email received from queue.");
+
+                try {
+                    processNewMessage(message);
+                } catch (Exception e) {
+                     logger.log(Level.SEVERE, "Failed to process message from queue.", e);
+                }
+
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                logger.warning("Email processing thread interrupted.");
+                break;
+            }
         }
     }
 
     private Properties getImapProperties() {
 		Properties props = new Properties();
-        props.put("mail.store.api", "imaps"); 
+        props.put("mail.store.api", "imaps");
         props.put("mail.imap.host", this.imapHost);
         props.put("mail.imap.port", this.imapPort);
 		return props;
@@ -94,8 +155,8 @@ public class EmailService implements Runnable {
                 Message[] messages = event.getMessages();
                 for (Message message : messages) {
                     try {
-                        processNewMessage(message);
-                    } catch (MessagingException e) {
+                        messageQueue.put(message);
+                    } catch (Exception e) {
                         e.printStackTrace();
                     }
                 }
@@ -105,37 +166,44 @@ public class EmailService implements Runnable {
 	}
 
     /**
-     * Called by other parts of the application to retrieve the last processed email message.
-     * @return The most recently received EmailMessage, or null if none.
-     */
-    public EmailMessage getLastReceivedEmail() {
-        return lastReceivedEmail.get();
-    }
-
-    public static void printLastReceivedEmail() {
-        lastReceivedEmail.get().printEmail();
-    }
-
-    /**
-     * This method would be called internally by a separate handler (or the IDLE mechanism) 
+     * This method would be called internally by a separate handler (or the IDLE mechanism)
      * when a new email is detected and processed.
      * @param message The newly fetched email content.
      */
-    public static void processNewMessage(Message message) throws MessagingException {
+    public void processNewMessage(Message message) throws MessagingException {
         try {
             String subject = message.getSubject();
             String sender = message.getFrom()[0].toString();
+            String[] allRecipients = Arrays.toString(message.getAllRecipients()).split("[\\[\\]]")[1].split(", ");
             Date date = message.getSentDate();
             String bodyText = message.getContent().toString();
 
             // Map Message to EmailMessage model
-            EmailMessage emailMessage = new EmailMessage(sender, subject, date, bodyText);
-            
+            EmailMessage emailMessage = new EmailMessage(sender, allRecipients, subject, date, bodyText, message);
+
             logger.info("Processed new email: From " + sender + ", Subject: " + subject);
 
-            // Update the shared reference
-            lastReceivedEmail.set(emailMessage);
-            printLastReceivedEmail();
+            emailMessage.printEmail();
+
+            String replyContent = dispatcherAgent.processEmail(emailMessage);
+            System.out.println("Proposed reply: \n" + replyContent + "\nSend this reply ? (y/n)\n");
+
+            boolean successReply;
+            try (Scanner scanner = new Scanner(System.in)) {
+                String confirmation = scanner.nextLine().trim().toLowerCase();
+                if ("y".equals(confirmation)) {
+                    successReply = outgoingMailService.sendEmailReply(emailMessage, replyContent, false);
+                } else {
+                    System.out.println("Sending cancelled by user.");
+                    successReply = false;
+                }
+            }
+
+            if (successReply == true) {
+                System.out.println("Outgoing Mail Test Status: SUCCESS");
+            } else {
+                System.err.println("Outgoing Mail Test Status: FAILED (Check credentials/logs)");
+            }
 
         } catch (Exception e) {
             logger.log(Level.SEVERE, "Error processing message.", e);

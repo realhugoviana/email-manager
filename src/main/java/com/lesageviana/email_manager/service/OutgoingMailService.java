@@ -5,6 +5,8 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
+import com.lesageviana.email_manager.model.EmailMessage;
+
 import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.MessagingException;
 
@@ -49,19 +51,53 @@ public class OutgoingMailService {
      * @param bodyContent The plain text content of the email body.
      * @return true if sending was successful, false otherwise.
      */
-    public boolean sendSimpleEmail(String to, String subject, String bodyContent) {
+    public boolean sendEmailReply(EmailMessage message, String bodyContent, boolean replyToAll) {
         try {
-            Message message = new MimeMessage(getEmailSession());
-            message.setFrom(new InternetAddress(this.smtpUsername));
-            message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(to));
-            message.setSubject(subject);
-            message.setText(bodyContent);
-            Transport.send(message);
-            System.out.println("Successfully sent email to: " + to);
+            Message originalMessage = message.getOriginalMessage();
+
+            Message reply = new MimeMessage(getEmailSession());
+
+            reply.setFrom(new InternetAddress("testlesageviana@gmail.com"));
+
+            reply.setRecipient(Message.RecipientType.TO, originalMessage.getFrom()[0]);
+            if (replyToAll == true) {
+                reply.addRecipients(Message.RecipientType.CC, originalMessage.getRecipients(Message.RecipientType.CC));
+                reply.addRecipients(Message.RecipientType.BCC, originalMessage.getRecipients(Message.RecipientType.BCC));
+            }
+
+            String subject = originalMessage.getSubject();
+            if (subject != null) {
+                if (!subject.regionMatches(true, 0, "Re: ", 0, 4))
+                    subject = "Re: " + subject;
+                reply.setHeader("Subject", subject);
+            }
+
+            reply.setText(bodyContent);
+            
+            String[] messageId = originalMessage.getHeader("Message-Id");
+            if (messageId != null && messageId.length > 0) {
+                reply.setHeader("In-Reply-To", messageId[0]);
+            }
+
+            String[] references = originalMessage.getHeader("References");
+            if (references != null && references.length > 0) {
+                references = originalMessage.getHeader("In-Reply-To");
+            }
+            if (messageId != null) {
+                if (references != null && references.length > 0) {
+                    reply.setHeader("References", references + " " + messageId[0]);
+                } else {
+                    reply.setHeader("References", messageId[0]);
+                }
+            }
+
+            Transport.send(reply);
+
+            System.out.println("Successfully sent email");
             return true;
 
         } catch (MessagingException e) {
-            System.err.println("Error sending email to " + to + ": " + e.getMessage());
+            System.err.println("Error sending email: " + e.getMessage());
             e.printStackTrace();
             return false;
         }
@@ -70,7 +106,7 @@ public class OutgoingMailService {
 	private Session getEmailSession() {
 		return Session.getInstance(getGmailProperties(), new Authenticator() {
 		    protected PasswordAuthentication getPasswordAuthentication() {
-		        return new PasswordAuthentication(smtpUsername, smtpPassword);
+		        return new PasswordAuthentication("testlesageviana@gmail.com", "ugpk zijz hqkj ttxj");
 		    }
 		});
 	}
@@ -79,9 +115,9 @@ public class OutgoingMailService {
 		Properties prop = new Properties();
 		prop.put("mail.smtp.auth", "true");
 		prop.put("mail.smtp.starttls.enable", "true");
-		prop.put("mail.smtp.host", this.smtpHost);
-		prop.put("mail.smtp.port", this.smtpPort);
-		prop.put("mail.smtp.ssl.trust", this.smtpHost);
+		prop.put("mail.smtp.host", "smtp.gmail.com");
+		prop.put("mail.smtp.port", "587");
+		prop.put("mail.smtp.ssl.trust", "smtp.gmail.com");
 		return prop;
 	}
 }
