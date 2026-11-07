@@ -5,6 +5,8 @@ import com.lesageviana.email_manager.service.LMService;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -15,14 +17,16 @@ import java.util.Optional;
 @Component
 public class DispatcherAgent implements IAgent {
     // Now takes the list of agents from the dedicated loader service, not Spring auto-discovery
-    private final List<AnswererAgent> answerers; 
+    private  List<AnswererAgent> answerers = new ArrayList<>(); 
     private final LMService lmService;
 
-    @Autowired
-    public DispatcherAgent(AgentConfigLoader agentConfigLoader, LMService lmService) {
-        // Initialize the list of agents using the dedicated loader service.
-        this.answerers = agentConfigLoader.getLoadedAgents();
+    public DispatcherAgent(LMService lmService) {
         this.lmService = lmService;
+    }
+
+    @Autowired
+    public void setAnswerers(List<AnswererAgent> answerers) {
+        this.answerers = answerers;
     }
 
     /**

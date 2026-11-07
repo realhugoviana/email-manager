@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
  * Abstract base class for all answerer agents, providing common structure
  * and handling the interaction with the LLM via LMService.
  */
-public abstract class AnswererAgent implements IAgent {
+public class AnswererAgent implements IAgent {
     protected final LMService lmService;
     private final String systemPrompt; // Agent's mandatory system prompt
     private float[] embeddingDescription;
