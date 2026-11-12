@@ -57,7 +57,7 @@ public class OutgoingMailService {
 
             Message reply = new MimeMessage(getEmailSession());
 
-            reply.setFrom(new InternetAddress("testlesageviana@gmail.com"));
+            reply.setFrom(new InternetAddress(smtpUsername));
 
             reply.setRecipient(Message.RecipientType.TO, originalMessage.getFrom()[0]);
             if (replyToAll == true) {
@@ -106,7 +106,7 @@ public class OutgoingMailService {
 	private Session getEmailSession() {
 		return Session.getInstance(getGmailProperties(), new Authenticator() {
 		    protected PasswordAuthentication getPasswordAuthentication() {
-		        return new PasswordAuthentication("testlesageviana@gmail.com", "ugpk zijz hqkj ttxj");
+		        return new PasswordAuthentication(smtpUsername, smtpPassword);
 		    }
 		});
 	}
@@ -115,9 +115,9 @@ public class OutgoingMailService {
 		Properties prop = new Properties();
 		prop.put("mail.smtp.auth", "true");
 		prop.put("mail.smtp.starttls.enable", "true");
-		prop.put("mail.smtp.host", "smtp.gmail.com");
-		prop.put("mail.smtp.port", "587");
-		prop.put("mail.smtp.ssl.trust", "smtp.gmail.com");
+		prop.put("mail.smtp.host", smtpHost);
+		prop.put("mail.smtp.port", smtpPort);
+		prop.put("mail.smtp.ssl.trust", smtpHost);
 		return prop;
 	}
 }
