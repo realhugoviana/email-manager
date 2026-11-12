@@ -8,7 +8,8 @@ import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
+import java.io.FileWriter;
+import java.io.IOException;
 
 /**
  * The central agent responsible for receiving an incoming email and routing it
@@ -82,6 +83,18 @@ public class DispatcherAgent implements IAgent {
 
         // 6. Process email using the best matched agent
         if (bestMatch != null) {
+            // String agentName = bestMatch.getName();
+            // String emailID = email.getMessageId();
+            // try (FileWriter myWriter = new FileWriter("filename_no_context.csv", true)) {
+            //     myWriter.write("\n" + emailID + "," + agentName);
+            //     System.out.println("Successfully appended to the file.");
+            // } catch (IOException e) {
+            //     System.out.println("An error occurred.");
+            //     e.printStackTrace();
+            // }
+
+            // bestMatch.processEmail(email);
+            // return agentName;
             return bestMatch.processEmail(email);
         } else {
             return "Error: Could not find a suitable answerer agent.";

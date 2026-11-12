@@ -2,7 +2,8 @@ package com.lesageviana.email_manager.agent;
 
 import com.lesageviana.email_manager.model.EmailMessage;
 import com.lesageviana.email_manager.service.LMService;
-import org.springframework.stereotype.Component;
+
+import java.util.Arrays;
 
 /**
  * Abstract base class for all answerer agents, providing common structure
@@ -10,18 +11,22 @@ import org.springframework.stereotype.Component;
  */
 public class AnswererAgent implements IAgent {
     protected final LMService lmService;
+    private final String name;
     private final String systemPrompt; // Agent's mandatory system prompt
     private float[] embeddingDescription;
     /** The running context or memory of the agent (history of emails and responses) */
     private String context;
 
     // Constructor to inject necessary services and the agent's specific system prompt
-    public AnswererAgent(LMService lmService, String systemPrompt, String context) {
+    public AnswererAgent(LMService lmService, String name, String systemPrompt, String context) {
         this.lmService = lmService;
+        this.name = name;
         this.systemPrompt = systemPrompt;
         this.context = context;
         this.embeddingDescription = makeEmbedDescription();
     }
+
+    public String getName() { return name; }
 
     public float[] makeEmbedDescription() {
         // Combine the system prompt and current context for a comprehensive summary input
@@ -38,7 +43,11 @@ public class AnswererAgent implements IAgent {
     public void updateContext(EmailMessage email) {
         // Append the new incoming email to the agent's context history
         context += "\n--- NEW EMAIL RECEIVED ---\n";
+        context += "Received at: " + email.getReceivedAt() + "\n";
+        context += "Message ID: " + email.getMessageId() + "\n";
+        context += "In reply to: " + email.getInReplyTo() + "\n";
         context += "Sender: " + email.getSender() + "\n";
+        context += "All recipients: " + Arrays.toString(email.getAllRecipients()) + "\n";
         context += "Subject: " + email.getSubject() + "\n";
         context += "Body:\n" + email.getBody();
 
@@ -64,5 +73,6 @@ public class AnswererAgent implements IAgent {
             System.err.println("Error processing email in agent " + this.getClass().getSimpleName() + ": " + e.getMessage());
             return null;
         }
+        // return null;
     }
 }

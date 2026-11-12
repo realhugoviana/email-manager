@@ -2,11 +2,13 @@ package com.lesageviana.email_manager.service;
 
 import com.lesageviana.email_manager.agent.DispatcherAgent;
 import com.lesageviana.email_manager.model.EmailMessage;
+
 import jakarta.annotation.PostConstruct;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+
 
 import jakarta.mail.*;
 import jakarta.mail.event.MessageCountAdapter;
@@ -173,19 +175,40 @@ public class EmailService implements Runnable {
     public void processNewMessage(Message message) throws MessagingException {
         try {
             String subject = message.getSubject();
-            String sender = message.getFrom()[0].toString();
+            String sender;
+            if (message.getFrom() != null && message.getFrom().length > 0) {
+                sender = message.getFrom()[0].toString(); 
+            } else {
+                sender = "Null";
+            }
             String[] allRecipients = Arrays.toString(message.getAllRecipients()).split("[\\[\\]]")[1].split(", ");
             Date date = message.getSentDate();
             String bodyText = message.getContent().toString();
+            String messageId;
+            String inReplyTo;
+
+            if (message.getHeader("Message-Id") != null && message.getHeader("Message-Id").length > 0) {
+                messageId = message.getHeader("Message-Id")[0]; 
+            } else {
+                messageId = "Null";
+            }
+
+            if (message.getHeader("In-Reply-To") != null && message.getHeader("In-Reply-To").length > 0) {
+                inReplyTo = message.getHeader("In-Reply-To")[0]; 
+            } else {
+                inReplyTo = "Null";
+            }
 
             // Map Message to EmailMessage model
-            EmailMessage emailMessage = new EmailMessage(sender, allRecipients, subject, date, bodyText, message);
+            EmailMessage emailMessage = new EmailMessage(messageId, inReplyTo, sender, allRecipients, subject, date, bodyText, message);
 
             logger.info("Processed new email: From " + sender + ", Subject: " + subject);
 
             emailMessage.printEmail();
 
+
             String replyContent = dispatcherAgent.processEmail(emailMessage);
+
             System.out.println("Proposed reply: \n" + replyContent + "\nSend this reply ? (y/n)\n");
 
             boolean successReply;

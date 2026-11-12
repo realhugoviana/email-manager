@@ -6,6 +6,8 @@ import java.util.Date;
 import jakarta.mail.Message;
 
 public class EmailMessage {
+    private String messageId;
+    private String inReplyTo;
     private String sender;
     private String[] allRecipients;
     private String subject;
@@ -13,7 +15,9 @@ public class EmailMessage {
     private Date receivedAt;
     private Message originalMessage;
 
-    public EmailMessage(String sender, String[] allRecipients, String subject, Date date, String body, Message originalMessage) {
+    public EmailMessage(String messageId, String inReplyTo, String sender, String[] allRecipients, String subject, Date date, String body, Message originalMessage) {
+        this.messageId = messageId;
+        this.inReplyTo = inReplyTo;
         this.sender = sender;
         this.allRecipients = allRecipients;
         this.subject = subject;
@@ -22,6 +26,8 @@ public class EmailMessage {
         this.originalMessage = originalMessage;
     }
 
+    public String getMessageId() { return messageId; }
+    public String getInReplyTo() { return inReplyTo; }
     public String getSender() { return sender; }
     public String[] getAllRecipients() { return allRecipients; }
     public String getSubject() { return subject; }

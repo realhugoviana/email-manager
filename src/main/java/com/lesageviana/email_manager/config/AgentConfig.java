@@ -46,7 +46,7 @@ public class AgentConfig {
             for (AgentConfigData config : agentConfigs) {
                 // Instantiates the AnswererAgent using its required dependencies and loaded config data
                 try {
-                    AnswererAgent agent = new AnswererAgent(lmService, config.systemPrompt(), config.initialContext());
+                    AnswererAgent agent = new AnswererAgent(lmService, config.agentName(),config.systemPrompt(), config.initialContext());
                     answerers.add(agent);
                     System.out.println("Successfully initialized agent: " + config.agentName());
                 } catch (Exception e) {
