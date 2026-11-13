@@ -50,7 +50,8 @@ public class EmailService implements Runnable {
     @Value("${email-manager.inbox.folder}")
     private String inboxFolder;
 
-    private static final OutgoingMailService outgoingMailService = new OutgoingMailService();
+    @Autowired
+    private OutgoingMailService outgoingMailService;
 
     @Autowired
     private DispatcherAgent dispatcherAgent;
