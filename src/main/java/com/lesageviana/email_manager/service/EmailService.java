@@ -15,13 +15,13 @@ import jakarta.mail.event.MessageCountAdapter;
 import jakarta.mail.event.MessageCountEvent;
 
 import com.sun.mail.imap.IMAPFolder;
+import org.jsoup.Jsoup;
 
 import java.util.Properties;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -55,6 +55,10 @@ public class EmailService implements Runnable {
 
     @Autowired
     private DispatcherAgent dispatcherAgent;
+
+    /** Bridge to the web UI: publishes the current email / proposed reply and receives the decision. */
+    @Autowired
+    private ReplyDecisionService replyDecisionService;
     /**
      * Initializes the connection and starts listening when the service bean is created.
      */
@@ -118,6 +122,7 @@ public class EmailService implements Runnable {
             try {
                 // Waits indefinitely until a message is available in the queue (blocking call)
                 Message message = messageQueue.take();
+                replyDecisionService.queueSizeChanged(messageQueue.size());
                 logger.info("Processing new email received from queue.");
 
                 try {
@@ -159,6 +164,7 @@ public class EmailService implements Runnable {
                 for (Message message : messages) {
                     try {
                         messageQueue.put(message);
+                        replyDecisionService.queueSizeChanged(messageQueue.size());
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
@@ -184,7 +190,7 @@ public class EmailService implements Runnable {
             }
             String[] allRecipients = Arrays.toString(message.getAllRecipients()).split("[\\[\\]]")[1].split(", ");
             Date date = message.getSentDate();
-            String bodyText = message.getContent().toString();
+            String bodyText = extractText(message);
             String messageId;
             String inReplyTo;
 
@@ -206,32 +212,80 @@ public class EmailService implements Runnable {
             logger.info("Processed new email: From " + sender + ", Subject: " + subject);
 
             emailMessage.printEmail();
+            replyDecisionService.emailReceived(emailMessage);
 
 
             String replyContent = dispatcherAgent.processEmail(emailMessage);
+            if (replyContent == null || replyContent.isBlank()) {
+                replyDecisionService.finished(ReplyDecisionService.Status.FAILED, "The agents did not produce a reply.");
+                return;
+            }
+            System.out.println("Proposed reply: \n" + replyContent + "\nWaiting for decision in the web UI...\n");
 
-            System.out.println("Proposed reply: \n" + replyContent + "\nSend this reply ? (y/n)\n");
+            // Blocks this (consumer) thread until the user accepts or rejects in the web UI.
+            ReplyDecisionService.Decision decision = replyDecisionService.awaitDecision(replyContent);
 
-            boolean successReply;
-            try (Scanner scanner = new Scanner(System.in)) {
-                String confirmation = scanner.nextLine().trim().toLowerCase();
-                if ("y".equals(confirmation)) {
-                    successReply = outgoingMailService.sendEmailReply(emailMessage, replyContent, false);
-                } else {
-                    System.out.println("Sending cancelled by user.");
-                    successReply = false;
-                }
+            if (!decision.accepted()) {
+                System.out.println("Sending cancelled by user.");
+                replyDecisionService.finished(ReplyDecisionService.Status.REJECTED, "Reply discarded.");
+                return;
             }
 
-            if (successReply == true) {
+            replyDecisionService.sending(decision.replyText());
+            boolean successReply = outgoingMailService.sendEmailReply(emailMessage, decision.replyText(), false);
+
+            if (successReply) {
                 System.out.println("Outgoing Mail Test Status: SUCCESS");
+                replyDecisionService.finished(ReplyDecisionService.Status.SENT, "Reply sent to " + sender + ".");
             } else {
                 System.err.println("Outgoing Mail Test Status: FAILED (Check credentials/logs)");
+                replyDecisionService.finished(ReplyDecisionService.Status.FAILED, "Sending failed (check credentials/logs).");
             }
 
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            replyDecisionService.finished(ReplyDecisionService.Status.FAILED, "Processing interrupted.");
         } catch (Exception e) {
             logger.log(Level.SEVERE, "Error processing message.", e);
+            replyDecisionService.finished(ReplyDecisionService.Status.FAILED, "Error: " + e.getMessage());
             throw new MessagingException("Failed to process email content", e);
         }
+    }
+
+    /**
+     * Extracts readable text from a message. Multipart messages (e.g. Gmail's
+     * text/plain + text/html alternatives) would otherwise render as "MimeMultipart@...".
+     * Prefers text/plain, falls back to text/html.
+     */
+    private static String extractText(Part part) throws Exception {
+        if (part.isMimeType("text/plain")) {
+            return part.getContent().toString();
+        }
+        if (part.isMimeType("multipart/*")) {
+            Multipart multipart = (Multipart) part.getContent();
+            String htmlFallback = null;
+            for (int i = 0; i < multipart.getCount(); i++) {
+                BodyPart bodyPart = multipart.getBodyPart(i);
+                if (Part.ATTACHMENT.equalsIgnoreCase(bodyPart.getDisposition())) {
+                    continue;
+                }
+                if (bodyPart.isMimeType("text/html")) {
+                    if (htmlFallback == null) htmlFallback = bodyPart.getContent().toString();
+                    continue;
+                }
+                String text = extractText(bodyPart);
+                if (text != null && !text.isBlank()) {
+                    return text;
+                }
+            }
+            return htmlFallback != null ? Jsoup.parse(htmlFallback).wholeText().strip() : "";
+        }
+        if (part.isMimeType("text/html")) {
+            return Jsoup.parse(part.getContent().toString()).wholeText().strip();
+        }
+        if (part.isMimeType("text/*")) {
+            return part.getContent().toString();
+        }
+        return "";
     }
 }
